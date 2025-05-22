@@ -87,7 +87,7 @@ export function ImageUploadCard({ title, description, onImageSelected, idPrefix,
   return (
     <Card className="shadow-lg hover:shadow-xl transition-shadow duration-300">
       <CardHeader>
-        <CardTitle className="text-xl font-semibold">{title}</CardTitle>
+        <CardTitle className="text-lg font-semibold">{title}</CardTitle>
         <CardDescription>{description}{acceptCriteria && <span className="block text-xs text-muted-foreground mt-1">Accepted content: {acceptCriteria}</span>}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">

@@ -76,8 +76,8 @@ export default function ImageWeaverPage() {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-4 pt-8 bg-gradient-to-br from-background to-secondary/30">
       <header className="mb-8 text-center">
-        <h1 className="text-5xl font-bold text-primary tracking-tight">Image Weaver</h1>
-        <p className="text-muted-foreground mt-2 text-lg">Craft unique visuals by merging images and sketching text with AI.</p>
+        <h1 className="text-4xl font-bold text-primary tracking-tight">Image Weaver</h1>
+        <p className="text-muted-foreground mt-2 text-base">Craft unique visuals by merging images and sketching text with AI.</p>
       </header>
 
       <main className="w-full max-w-5xl space-y-8">
@@ -123,7 +123,7 @@ export default function ImageWeaverPage() {
             size="lg"
             onClick={handleSubmit}
             disabled={isPending || !foregroundImage || !backgroundImage || !textInput.trim()}
-            className="w-full max-w-xs text-lg py-6 shadow-lg hover:shadow-primary/40 transition-shadow duration-300 group"
+            className="w-full max-w-xs text-base py-6 shadow-lg hover:shadow-primary/40 transition-shadow duration-300 group"
           >
             {isPending ? (
               <Loader2 className="mr-2 h-6 w-6 animate-spin" />
@@ -165,7 +165,7 @@ export default function ImageWeaverPage() {
         {finalImage && !isPending && (
           <Card className="shadow-xl border-2 border-primary/50">
             <CardHeader>
-              <CardTitle className="text-2xl text-primary">Your Woven Image!</CardTitle>
+              <CardTitle className="text-xl text-primary">Your Woven Image!</CardTitle>
               <CardDescription>Preview your AI-generated artwork below. You can download it or try new variations.</CardDescription>
             </CardHeader>
             <CardContent className="flex justify-center p-2 sm:p-4 md:p-6">
