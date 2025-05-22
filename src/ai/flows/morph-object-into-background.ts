@@ -57,23 +57,25 @@ const morphObjectIntoBackgroundFlow = ai.defineFlow(
     const {media} = await ai.generate({
       model: 'googleai/gemini-2.0-flash-exp', // Use the experimental model capable of image generation
       prompt: [
-        {media: {url: input.foregroundImage}}, // First image (foreground)
-        {media: {url: input.backgroundImage}}, // Second image (background)
+        {media: {url: input.foregroundImage}}, // This will be referred to as the "Foreground Image" or "first image" in the text prompt
+        {media: {url: input.backgroundImage}}, // This will be referred to as the "Background Image" or "second image" in the text prompt
         {
           text: `You are an expert image manipulation AI.
-The user has provided two images and some text.
-The first image is a foreground image containing an object (e.g., a person or animal).
-The second image is a background image (e.g., a landscape or texture).
-The text to add is: "${input.text}".
+The user has provided a foreground image, a background image, and some text.
+
+- The **Foreground Image** (the first image provided in the input) contains the primary subject (e.g., a person or animal).
+- The **Background Image** (the second image provided in the input) is the scene or texture that should serve as the base.
+- The **Text to add** is: "${input.text}".
 
 Your task is to:
-1. Identify the main object(s) in the first (foreground) image.
-2. Seamlessly morph and blend this object(s) into the second (background) image.
-3. Render the provided text ("${input.text}") as a hand-sketched element onto the composed image. The style of the sketch should be artistic and visually appealing, fitting the theme of the combined image.
-4. Return only the final, merged image. This image should be a single data URI.
+1. Identify the main object(s) in the **Foreground Image** (the first image).
+2. Use the **Background Image** (the second image) as the primary canvas or base for the final image.
+3. Seamlessly morph and blend the identified object(s) from the **Foreground Image** INTO the **Background Image**. The Background Image should remain clearly identifiable and form the dominant backdrop of the final composite.
+4. Render the provided text ("${input.text}") as a hand-sketched element onto this newly composed image (i.e., the Foreground object integrated into the Background Image). The style of the sketch should be artistic and visually appealing, fitting the theme of the combined image.
+5. Return ONLY the final, merged image. This image must be a single data URI.
 
-Focus on creating a high-quality, plausible, and aesthetically pleasing result. The foreground object should appear naturally integrated into the background, and the sketched text should complement the overall image composition.
-Do not output any text description, only the image data URI.`,
+Focus on creating a high-quality, plausible, and aesthetically pleasing result. The object from the Foreground Image should appear naturally integrated into the Background Image.
+Do not output any text description, only the image data URI of the final composed image.`,
         },
       ],
       config: {
@@ -89,3 +91,4 @@ Do not output any text description, only the image data URI.`,
     return {finalImage: media.url};
   }
 );
+
