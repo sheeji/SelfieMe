@@ -5,7 +5,7 @@ import React, { useRef, useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Camera, UploadCloud, XCircle, Image as ImageIcon, Video, AlertTriangle, CircleUserRound } from 'lucide-react';
+import { Camera, UploadCloud, XCircle, Image as ImageIcon, Video, AlertTriangle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
@@ -14,7 +14,7 @@ interface ImageUploadCardProps {
   description: string;
   onImageSelected: (imageDataUrl: string | null) => void;
   idPrefix: string;
-  acceptCriteria?: string; // e.g. "human, animal"
+  acceptCriteria?: string; 
   dataAiHint?: string;
 }
 
@@ -36,21 +36,18 @@ export function ImageUploadCard({ title, description, onImageSelected, idPrefix,
 
   const [isCameraModeActive, setIsCameraModeActive] = useState(false);
   const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
-  const [stream, setStream] = useState<MediaStream | null>(null);
+  const [activeStream, setActiveStream] = useState<MediaStream | null>(null);
 
-  const stopStream = useCallback(() => {
-    if (stream) {
-      stream.getTracks().forEach(track => track.stop());
-      setStream(null);
-    }
-  }, [stream]);
 
   useEffect(() => {
+    let currentStream: MediaStream | null = null;
+
     if (isCameraModeActive) {
       const getCameraPermission = async () => {
         try {
           const newStream = await navigator.mediaDevices.getUserMedia({ video: true });
-          setStream(newStream);
+          currentStream = newStream;
+          setActiveStream(newStream);
           setHasCameraPermission(true);
           if (videoRef.current) {
             videoRef.current.srcObject = newStream;
@@ -63,21 +60,31 @@ export function ImageUploadCard({ title, description, onImageSelected, idPrefix,
             title: 'Camera Access Denied',
             description: 'Please enable camera permissions in your browser settings.',
           });
-          setIsCameraModeActive(false); // Close camera mode if permission denied
+          setIsCameraModeActive(false); // Exit camera mode on error
         }
       };
       getCameraPermission();
     } else {
-      stopStream();
+      // If camera mode is explicitly turned off, ensure any active stream from state is stopped
+      if (activeStream) {
+        activeStream.getTracks().forEach(track => track.stop());
+        setActiveStream(null);
+      }
     }
 
     return () => {
-      // Cleanup stream when component unmounts or camera mode is deactivated
-      if (isCameraModeActive) {
-        stopStream();
+      // Cleanup: always stop the stream this effect instance might have started
+      if (currentStream) {
+        currentStream.getTracks().forEach(track => track.stop());
+      }
+      // If the component unmounts while a stream is in activeStream state but not currentStream (e.g. toggled off then unmounted)
+      // ensure that is also cleaned up. This might be redundant if the 'else' block above always runs before unmount.
+      if (activeStream && !isCameraModeActive) { 
+          activeStream.getTracks().forEach(track => track.stop());
+          setActiveStream(null);
       }
     };
-  }, [isCameraModeActive, toast, stopStream]);
+  }, [isCameraModeActive, toast]); // Removed activeStream from dependencies
 
 
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -116,17 +123,17 @@ export function ImageUploadCard({ title, description, onImageSelected, idPrefix,
   const triggerFileInput = () => fileInputRef.current?.click();
 
   const handleTakePhotoClick = () => {
-    setImagePreview(null); // Clear any existing preview
+    setImagePreview(null); 
     onImageSelected(null);
+    setHasCameraPermission(null); // Reset permission status before attempting again
     setIsCameraModeActive(true);
   };
 
   const handleCapturePhoto = () => {
-    if (videoRef.current && canvasRef.current && stream) {
+    if (videoRef.current && canvasRef.current && activeStream) {
       const video = videoRef.current;
       const canvas = canvasRef.current;
       
-      // Set canvas dimensions to video's intrinsic dimensions for best quality
       canvas.width = video.videoWidth;
       canvas.height = video.videoHeight;
       
@@ -140,20 +147,21 @@ export function ImageUploadCard({ title, description, onImageSelected, idPrefix,
           title: "Photo Captured!",
         });
       }
-      handleCloseCameraView();
+      setIsCameraModeActive(false); // This will trigger useEffect cleanup for the stream
     }
   };
   
   const handleCloseCameraView = () => {
-    setIsCameraModeActive(false);
-    // The useEffect cleanup will handle stopping the stream
+    setIsCameraModeActive(false); // This will trigger useEffect cleanup for the stream
   };
 
   const clearImage = () => {
     setImagePreview(null);
     onImageSelected(null);
     if (fileInputRef.current) fileInputRef.current.value = '';
-    handleCloseCameraView(); // Also close camera view if it's open
+    if (isCameraModeActive) {
+      handleCloseCameraView();
+    }
     toast({
       title: "Image Cleared",
       description: "The selected image/camera view has been cleared.",
@@ -171,9 +179,8 @@ export function ImageUploadCard({ title, description, onImageSelected, idPrefix,
           <div className="space-y-4">
             <div className="aspect-video w-full bg-muted rounded-md flex items-center justify-center overflow-hidden border border-dashed relative">
               <video ref={videoRef} className="w-full h-full object-cover" autoPlay playsInline muted />
-              {/* Hidden canvas for capturing frame */}
               <canvas ref={canvasRef} className="hidden"></canvas>
-              {!stream && hasCameraPermission !== false && ( // Show loading/placeholder before stream starts but after permission requested
+              {!activeStream && hasCameraPermission === null && ( 
                 <div className="absolute inset-0 flex flex-col items-center justify-center bg-background/80">
                   <Video size={48} className="text-muted-foreground animate-pulse mb-2" />
                   <p className="text-muted-foreground">Starting camera...</p>
@@ -185,12 +192,12 @@ export function ImageUploadCard({ title, description, onImageSelected, idPrefix,
                 <AlertTriangle className="h-4 w-4" />
                 <AlertTitle>Camera Access Denied</AlertTitle>
                 <AlertDescription>
-                  To take a photo, please enable camera permissions in your browser settings and refresh the page.
+                  To take a photo, please enable camera permissions in your browser settings and try again.
                 </AlertDescription>
               </Alert>
             )}
             <div className="flex flex-col sm:flex-row gap-2">
-              <Button onClick={handleCapturePhoto} className="flex-1" disabled={!stream || hasCameraPermission === false}>
+              <Button onClick={handleCapturePhoto} className="flex-1" disabled={!activeStream || hasCameraPermission === false}>
                 <Camera className="mr-2 h-4 w-4" /> Capture
               </Button>
               <Button variant="outline" onClick={handleCloseCameraView} className="flex-1">
@@ -207,7 +214,6 @@ export function ImageUploadCard({ title, description, onImageSelected, idPrefix,
                 <div className="text-center text-muted-foreground p-4">
                   <ImageIcon size={48} className="mx-auto mb-2" />
                   <p>Image Preview</p>
-                  {/* This placeholder helps with AI image search hints even when no image is selected */}
                   <Image src={`https://placehold.co/400x225.png`} alt="Placeholder" width={400} height={225} className="opacity-0 absolute -z-10" data-ai-hint={dataAiHint || "placeholder image"}/>
                 </div>
               )}
@@ -241,5 +247,3 @@ export function ImageUploadCard({ title, description, onImageSelected, idPrefix,
     </Card>
   );
 }
-
-    
