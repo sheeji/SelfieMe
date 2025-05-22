@@ -62,15 +62,15 @@ const morphObjectIntoBackgroundFlow = ai.defineFlow(
         {
           text: `You are an expert image manipulation AI.
 The user has provided two images and some text.
-- The **FIRST image** provided in the input is the **Foreground Image**. It contains the primary subject (e.g., a person or animal).
+- The **FIRST image** provided in the input is the **Foreground Image**. It contains the primary subject (e.g., a person or animal) and its original background.
 - The **SECOND image** provided in the input is the **Background Image**. This is the scene or texture that MUST serve as the largely unchanged base for the final composition.
 - The **Text to add** is: "${input.text}".
 
 Your task is to perform the following steps precisely:
-1.  Isolate the main object(s) from the **Foreground Image** (the FIRST image).
+1.  From the **Foreground Image** (the FIRST image), accurately isolate the primary human or animal subject, REMOVING ITS ORIGINAL BACKGROUND COMPLETELY. Only the subject itself should be retained.
 2.  Take the **Background Image** (the SECOND image) and use it as the foundational layer. This Background Image should remain clearly recognizable and form the dominant backdrop in the final output. It should NOT be significantly altered or morphed by the foreground content.
-3.  Place and seamlessly integrate the isolated object(s) from the Foreground Image ONTO the Background Image. The integration should make the object appear naturally part of the background scene.
-4.  After the object is placed on the Background Image, render the provided text ("${input.text}") as a hand-sketched element onto this composite image. The style of the sketch should be artistic and visually appealing.
+3.  Place and seamlessly integrate the isolated subject (from step 1) ONTO the Background Image. The integration should make the subject appear naturally part of the background scene.
+4.  After the subject is placed on the Background Image, render the provided text ("${input.text}") as a hand-sketched element onto this composite image. The style of the sketch should be artistic and visually appealing.
 5.  Return ONLY the final, composed image as a single data URI. Do not output any descriptive text or any other content apart from the image data URI.`,
         },
       ],
@@ -87,4 +87,3 @@ Your task is to perform the following steps precisely:
     return {finalImage: media.url};
   }
 );
-
