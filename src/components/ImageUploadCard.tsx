@@ -84,7 +84,7 @@ export function ImageUploadCard({ title, description, onImageSelected, idPrefix,
           setActiveStream(null);
       }
     };
-  }, [isCameraModeActive, toast]); // Removed activeStream from dependencies
+  }, [isCameraModeActive, toast]);
 
 
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -102,10 +102,10 @@ export function ImageUploadCard({ title, description, onImageSelected, idPrefix,
         const dataUri = await fileToDataUri(file);
         setImagePreview(dataUri);
         onImageSelected(dataUri);
-        toast({
-          title: "Image Selected",
-          description: `${file.name} has been selected.`,
-        });
+        // toast({
+        //   title: "Image Selected",
+        //   description: `${file.name} has been selected.`,
+        // });
       } catch (error) {
         toast({
           title: "Error processing image",
@@ -143,9 +143,9 @@ export function ImageUploadCard({ title, description, onImageSelected, idPrefix,
         const dataUri = canvas.toDataURL('image/png');
         setImagePreview(dataUri);
         onImageSelected(dataUri);
-        toast({
-          title: "Photo Captured!",
-        });
+        // toast({
+        //   title: "Photo Captured!",
+        // });
       }
       setIsCameraModeActive(false); // This will trigger useEffect cleanup for the stream
     }
@@ -247,3 +247,4 @@ export function ImageUploadCard({ title, description, onImageSelected, idPrefix,
     </Card>
   );
 }
+
