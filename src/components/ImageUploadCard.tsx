@@ -14,7 +14,7 @@ interface ImageUploadCardProps {
   description: string;
   onImageSelected: (imageDataUrl: string | null) => void;
   idPrefix: string;
-  acceptCriteria?: string; 
+  acceptCriteria?: string;
   dataAiHint?: string;
 }
 
@@ -40,48 +40,73 @@ export function ImageUploadCard({ title, description, onImageSelected, idPrefix,
 
 
   useEffect(() => {
-    let currentStream: MediaStream | null = null;
+    // This variable will hold the stream started by this specific effect run.
+    let effectStream: MediaStream | null = null;
+    // Flag to check if component is still mounted during async operations.
+    let componentIsMounted = true;
 
-    if (isCameraModeActive) {
-      const getCameraPermission = async () => {
-        try {
-          const newStream = await navigator.mediaDevices.getUserMedia({ video: true });
-          currentStream = newStream;
-          setActiveStream(newStream);
-          setHasCameraPermission(true);
-          if (videoRef.current) {
-            videoRef.current.srcObject = newStream;
-          }
-        } catch (error) {
-          console.error('Error accessing camera:', error);
-          setHasCameraPermission(false);
-          toast({
-            variant: 'destructive',
-            title: 'Camera Access Denied',
-            description: 'Please enable camera permissions in your browser settings.',
-          });
-          setIsCameraModeActive(false); // Exit camera mode on error
+    const startCamera = async () => {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        if (!componentIsMounted) {
+          // If component unmounted while waiting for permission, stop the acquired stream.
+          stream.getTracks().forEach(track => track.stop());
+          return;
         }
-      };
-      getCameraPermission();
-    } else {
-      // If camera mode is explicitly turned off, ensure any active stream from state is stopped
+        effectStream = stream;
+        setActiveStream(stream);
+        setHasCameraPermission(true);
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+          videoRef.current.play().catch(e => console.warn("Video play failed:", e));
+        }
+      } catch (error) {
+        if (!componentIsMounted) return;
+        console.error('Error accessing camera:', error);
+        setHasCameraPermission(false);
+        toast({
+          variant: 'destructive',
+          title: 'Camera Access Denied',
+          description: 'Please enable camera permissions in your browser settings.',
+        });
+        setIsCameraModeActive(false); // Turn off camera mode on error
+      }
+    };
+
+    const stopActiveCamera = () => {
       if (activeStream) {
         activeStream.getTracks().forEach(track => track.stop());
         setActiveStream(null);
       }
+      if (videoRef.current && videoRef.current.srcObject) {
+        // Check if srcObject is a MediaStream before calling getTracks
+        if (videoRef.current.srcObject instanceof MediaStream) {
+          (videoRef.current.srcObject as MediaStream).getTracks().forEach(track => track.stop());
+        }
+        videoRef.current.srcObject = null;
+      }
+      setHasCameraPermission(null); // Reset permission display
+    };
+
+    if (isCameraModeActive) {
+      startCamera();
+    } else {
+      stopActiveCamera();
     }
 
     return () => {
-      // Cleanup: always stop the stream this effect instance might have started
-      if (currentStream) {
-        currentStream.getTracks().forEach(track => track.stop());
+      componentIsMounted = false;
+      // Cleanup: stop the stream that THIS effect instance started.
+      if (effectStream) {
+        effectStream.getTracks().forEach(track => track.stop());
       }
-      // If the component unmounts while a stream is in activeStream state but not currentStream (e.g. toggled off then unmounted)
-      // ensure that is also cleaned up. This might be redundant if the 'else' block above always runs before unmount.
-      if (activeStream && !isCameraModeActive) { 
-          activeStream.getTracks().forEach(track => track.stop());
-          setActiveStream(null);
+      // If isCameraModeActive was true when unmounting, the main 'activeStream' might still need cleanup
+      // if 'effectStream' hadn't been set yet (e.g. during await) or if they differ.
+      // The 'else' block handles when isCameraModeActive becomes false before unmount.
+      // This is a failsafe for unmounting while camera was intended to be active.
+      if (isCameraModeActive && activeStream && activeStream !== effectStream) {
+        activeStream.getTracks().forEach(track => track.stop());
+        // Note: setActiveStream(null) here might cause warning if component is already unmounted
       }
     };
   }, [isCameraModeActive, toast]);
@@ -102,10 +127,6 @@ export function ImageUploadCard({ title, description, onImageSelected, idPrefix,
         const dataUri = await fileToDataUri(file);
         setImagePreview(dataUri);
         onImageSelected(dataUri);
-        // toast({
-        //   title: "Image Selected",
-        //   description: `${file.name} has been selected.`,
-        // });
       } catch (error) {
         toast({
           title: "Error processing image",
@@ -123,9 +144,9 @@ export function ImageUploadCard({ title, description, onImageSelected, idPrefix,
   const triggerFileInput = () => fileInputRef.current?.click();
 
   const handleTakePhotoClick = () => {
-    setImagePreview(null); 
+    setImagePreview(null);
     onImageSelected(null);
-    setHasCameraPermission(null); // Reset permission status before attempting again
+    setHasCameraPermission(null); 
     setIsCameraModeActive(true);
   };
 
@@ -133,26 +154,23 @@ export function ImageUploadCard({ title, description, onImageSelected, idPrefix,
     if (videoRef.current && canvasRef.current && activeStream) {
       const video = videoRef.current;
       const canvas = canvasRef.current;
-      
+
       canvas.width = video.videoWidth;
       canvas.height = video.videoHeight;
-      
+
       const context = canvas.getContext('2d');
       if (context) {
         context.drawImage(video, 0, 0, canvas.width, canvas.height);
         const dataUri = canvas.toDataURL('image/png');
         setImagePreview(dataUri);
         onImageSelected(dataUri);
-        // toast({
-        //   title: "Photo Captured!",
-        // });
       }
-      setIsCameraModeActive(false); // This will trigger useEffect cleanup for the stream
+      setIsCameraModeActive(false); 
     }
   };
-  
+
   const handleCloseCameraView = () => {
-    setIsCameraModeActive(false); // This will trigger useEffect cleanup for the stream
+    setIsCameraModeActive(false);
   };
 
   const clearImage = () => {
@@ -180,7 +198,7 @@ export function ImageUploadCard({ title, description, onImageSelected, idPrefix,
             <div className="aspect-video w-full bg-muted rounded-md flex items-center justify-center overflow-hidden border border-dashed relative">
               <video ref={videoRef} className="w-full h-full object-cover" autoPlay playsInline muted />
               <canvas ref={canvasRef} className="hidden"></canvas>
-              {!activeStream && hasCameraPermission === null && ( 
+              {!activeStream && hasCameraPermission === null && (
                 <div className="absolute inset-0 flex flex-col items-center justify-center bg-background/80">
                   <Video size={48} className="text-muted-foreground animate-pulse mb-2" />
                   <p className="text-muted-foreground">Starting camera...</p>
@@ -247,4 +265,3 @@ export function ImageUploadCard({ title, description, onImageSelected, idPrefix,
     </Card>
   );
 }
-
