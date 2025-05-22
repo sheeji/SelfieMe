@@ -98,4 +98,3 @@ Your task is to perform the following steps in order:
     return {finalImage: media.url};
   }
 );
-
