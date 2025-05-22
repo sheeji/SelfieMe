@@ -61,13 +61,13 @@ const morphObjectIntoBackgroundFlow = ai.defineFlow(
         {media: {url: input.foregroundImage}}, // The image to process
         {
           text: `You are an expert image editing AI.
-The user has provided an image.
-- The image provided in the input is the **Foreground Image**. It contains the primary subject (e.g., a person or animal) and its original background.
+The user has provided a foreground image.
+- The image provided in the input is the **Foreground Image**. It contains the primary subject(s) (e.g., a person or animal) and its original background.
 
 Your task is to perform the following steps precisely:
-1.  From the **Foreground Image**, accurately isolate the primary human or animal subject.
-2.  REMOVE ITS ORIGINAL BACKGROUND COMPLETELY. The area where the background was should ideally be transparent. If transparency is not possible, use a solid white background. The key is a clean cutout of the subject.
-3.  Return ONLY the isolated subject as a single image data URI. Do not output any descriptive text or any other content apart from the image data URI.`,
+1.  From the **Foreground Image**, identify and isolate the primary human or animal subject(s) **in their entirety**. Ensure that the complete subject is captured, without any cropping or missing parts.
+2.  REMOVE ITS ORIGINAL BACKGROUND COMPLETELY. The area where the background was should ideally be transparent. If transparency is not possible, use a solid white background. The key is a clean cutout of the subject(s).
+3.  Return ONLY the isolated subject(s) as a single image data URI. Do not output any descriptive text or any other content apart from the image data URI.`,
         },
       ],
       config: {
@@ -83,3 +83,4 @@ Your task is to perform the following steps precisely:
     return {finalImage: media.url};
   }
 );
+
