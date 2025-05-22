@@ -81,8 +81,18 @@ Your task is to perform the following steps in order:
     });
 
     if (!media?.url) {
-      console.error('Image generation failed: media.url is missing from AI response in morphObjectIntoBackgroundFlow.');
-      throw new Error('AI failed to produce an image. The media URL was not available in the response.');
+      let mediaInfo = 'Media object is null or undefined.';
+      if (media) {
+        try {
+          // Safely attempt to stringify media, handling potential BigInts or circular refs, though unlikely for media.
+          mediaInfo = `Media object content: ${JSON.stringify(media, (key, value) => 
+            typeof value === 'bigint' ? value.toString() : value, 2)}`;
+        } catch (e: any) { // Specify 'e' as 'any' or 'unknown' then check type if needed
+          mediaInfo = `Could not stringify media object. Keys available: ${Object.keys(media).join(', ')}. Error: ${e.message}`;
+        }
+      }
+      console.error(`Image generation failed in morphObjectIntoBackgroundFlow. ${mediaInfo}`);
+      throw new Error('AI failed to produce an image. The media URL was not available in the response, or the media object was malformed.');
     }
     
     return {finalImage: media.url};
