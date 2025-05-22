@@ -55,31 +55,27 @@ const morphObjectIntoBackgroundFlow = ai.defineFlow(
   },
   async (input: MorphObjectIntoBackgroundInput): Promise<MorphObjectIntoBackgroundOutput> => {
     const {media} = await ai.generate({
-      model: 'googleai/gemini-2.0-flash-exp', // Use the experimental model capable of image generation
+      model: 'googleai/gemini-2.0-flash-exp', 
       prompt: [
-        {media: {url: input.foregroundImage}}, // This will be referred to as the "Foreground Image" or "first image" in the text prompt
-        {media: {url: input.backgroundImage}}, // This will be referred to as the "Background Image" or "second image" in the text prompt
+        {media: {url: input.foregroundImage}}, 
+        {media: {url: input.backgroundImage}}, 
         {
           text: `You are an expert image manipulation AI.
-The user has provided a foreground image, a background image, and some text.
-
-- The **Foreground Image** (the first image provided in the input) contains the primary subject (e.g., a person or animal).
-- The **Background Image** (the second image provided in the input) is the scene or texture that should serve as the base.
+The user has provided two images and some text.
+- The **FIRST image** provided in the input is the **Foreground Image**. It contains the primary subject (e.g., a person or animal).
+- The **SECOND image** provided in the input is the **Background Image**. This is the scene or texture that MUST serve as the largely unchanged base for the final composition.
 - The **Text to add** is: "${input.text}".
 
-Your task is to:
-1. Identify the main object(s) in the **Foreground Image** (the first image).
-2. Use the **Background Image** (the second image) as the primary canvas or base for the final image.
-3. Seamlessly morph and blend the identified object(s) from the **Foreground Image** INTO the **Background Image**. The Background Image should remain clearly identifiable and form the dominant backdrop of the final composite.
-4. Render the provided text ("${input.text}") as a hand-sketched element onto this newly composed image (i.e., the Foreground object integrated into the Background Image). The style of the sketch should be artistic and visually appealing, fitting the theme of the combined image.
-5. Return ONLY the final, merged image. This image must be a single data URI.
-
-Focus on creating a high-quality, plausible, and aesthetically pleasing result. The object from the Foreground Image should appear naturally integrated into the Background Image.
-Do not output any text description, only the image data URI of the final composed image.`,
+Your task is to perform the following steps precisely:
+1.  Isolate the main object(s) from the **Foreground Image** (the FIRST image).
+2.  Take the **Background Image** (the SECOND image) and use it as the foundational layer. This Background Image should remain clearly recognizable and form the dominant backdrop in the final output. It should NOT be significantly altered or morphed by the foreground content.
+3.  Place and seamlessly integrate the isolated object(s) from the Foreground Image ONTO the Background Image. The integration should make the object appear naturally part of the background scene.
+4.  After the object is placed on the Background Image, render the provided text ("${input.text}") as a hand-sketched element onto this composite image. The style of the sketch should be artistic and visually appealing.
+5.  Return ONLY the final, composed image as a single data URI. Do not output any descriptive text or any other content apart from the image data URI.`,
         },
       ],
       config: {
-        responseModalities: ['TEXT', 'IMAGE'], // Request both modalities, primarily interested in IMAGE
+        responseModalities: ['TEXT', 'IMAGE'], 
       },
     });
 
